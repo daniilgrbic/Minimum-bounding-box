@@ -11,6 +11,9 @@ add_executable(
         utility/loadobj.h
         utility/loadobj.cpp
         utility/controls.h
-        utility/controls.cpp)
+        utility/controls.cpp
+        convhull_3d.h
+        mbb.h
+        mbb.cpp)
 
 target_link_libraries(Minimum_bounding_box -lGLEW -lglfw -lGL)

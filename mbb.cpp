@@ -10,6 +10,8 @@
 #define CONVHULL_3D_ENABLE
 #include "convhull_3d.h"
 
+#include "mbb.h"
+
 using namespace std;
 
 typedef long double ftype;
@@ -70,19 +72,6 @@ vector<ftype> matrix3x3mulvector(vector<vector<ftype>> &matrix, vector<ftype> &v
     }
     return result;
 }
-
-struct pt3 {
-    ftype x, y, z;
-    pt3(ftype x = 0, ftype y = 0, ftype z = 0) : x(x), y(y), z(z) {}
-    pt3 operator-(const pt3 &o) const;
-    pt3 cross(const pt3 &o) const;
-    ftype dot(const pt3 &o) const;
-    void show();
-    ftype dist(const pt3 &o) const;
-    ftype dist3d(const pt3 &o) const;
-    ftype angle(const pt3 &o) const;
-    pt3 rotate(ftype angle) const;
-};
 
 pt3 pt3::operator-(const pt3 &o) const {
     return pt3(x - o.x, y - o.y, z - o.z);

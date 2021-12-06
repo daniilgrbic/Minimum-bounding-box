@@ -10,8 +10,14 @@
 #include "utility/loadobj.h"
 #include "utility/loadshaders.h"
 #include "utility/controls.h"
+#include "mbb.h"
 
 GLFWwindow* window;
+
+glm::vec3 ptToVec3(struct pt3 point) {
+    glm::vec3 result = glm::vec3(point.x, point.y, point.z);
+    return result;
+}
 
 int main() {
     if(not glfwInit()) {
@@ -35,7 +41,7 @@ int main() {
     }
 
     glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
-    //glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     // glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
@@ -47,6 +53,49 @@ int main() {
 
     if(not loadObj("teapot_normals.obj", vertices, normals, tempPoints)) {
         return glfwTerminate(), -1;
+    }
+
+    std::vector<pt3> points;
+    for(auto v : tempPoints) {
+        pt3 P(v.x, v.y, v.z);
+        points.push_back(P);
+    }
+    std::vector<pt3> lower(4), upper(4);
+    MBBapproximation(points, lower, upper);
+
+    std::cout << "Lower base:" << std::endl;
+    for(auto it: lower) {
+        std::cout << " " << it.x << " " << it.y << " " << it.z << std::endl;
+    }
+    std::cout << "Upper base:" << std::endl;
+    for(auto it: upper) {
+        std::cout << " " << it.x << " " << it.y << " " << it.z << std::endl;
+    }
+
+    std::vector<glm::vec3> boxVertices;
+    std::vector<glm::vec3> boxNormals;
+
+    boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(lower[1])); boxVertices.push_back(ptToVec3(lower[2]));
+    boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(lower[2])); boxVertices.push_back(ptToVec3(lower[3]));
+    boxVertices.push_back(ptToVec3(upper[0])); boxVertices.push_back(ptToVec3(upper[2])); boxVertices.push_back(ptToVec3(upper[1]));
+    boxVertices.push_back(ptToVec3(upper[0])); boxVertices.push_back(ptToVec3(upper[3])); boxVertices.push_back(ptToVec3(upper[2]));
+
+    boxVertices.push_back(ptToVec3(lower[2])); boxVertices.push_back(ptToVec3(lower[1])); boxVertices.push_back(ptToVec3(upper[2]));
+    boxVertices.push_back(ptToVec3(lower[1])); boxVertices.push_back(ptToVec3(upper[1])); boxVertices.push_back(ptToVec3(upper[2]));
+    boxVertices.push_back(ptToVec3(lower[3])); boxVertices.push_back(ptToVec3(upper[3])); boxVertices.push_back(ptToVec3(lower[0]));
+    boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(upper[3])); boxVertices.push_back(ptToVec3(upper[0]));
+
+    boxVertices.push_back(ptToVec3(lower[1])); boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(upper[1]));
+    boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(upper[0])); boxVertices.push_back(ptToVec3(upper[1]));
+    boxVertices.push_back(ptToVec3(lower[2])); boxVertices.push_back(ptToVec3(upper[2])); boxVertices.push_back(ptToVec3(lower[3]));
+    boxVertices.push_back(ptToVec3(lower[3])); boxVertices.push_back(ptToVec3(upper[2])); boxVertices.push_back(ptToVec3(upper[3]));
+
+    for(int i = 0; i < boxVertices.size(); i+= 3) {
+        glm::vec3 BMinusA = boxVertices[i+1] - boxVertices[i+0];
+        glm::vec3 CMinusA = boxVertices[i+2] - boxVertices[i+0];
+        glm::vec3 dir = glm::cross(BMinusA, CMinusA);
+        glm::vec3 normal = glm::normalize(dir);
+        boxNormals.push_back(normal); boxNormals.push_back(normal); boxNormals.push_back(normal);
     }
 
     unsigned int shaderProgramID = loadShaders("shaders/Vertex.shader", "shaders/Fragment.shader");
@@ -64,6 +113,16 @@ int main() {
     glGenBuffers(1, &normalBufferID);
     glBindBuffer(GL_ARRAY_BUFFER, normalBufferID);
     glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+
+    unsigned int boxVertexBufferID;
+    glGenBuffers(1, &boxVertexBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, boxVertexBufferID);
+    glBufferData(GL_ARRAY_BUFFER, boxVertices.size() * sizeof(glm::vec3), &boxVertices[0], GL_STATIC_DRAW);
+
+    unsigned int boxNormalBufferID;
+    glGenBuffers(1, &boxNormalBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, boxNormalBufferID);
+    glBufferData(GL_ARRAY_BUFFER, boxNormals.size() * sizeof(glm::vec3), &boxNormals[0], GL_STATIC_DRAW);
 
     unsigned int matrixUniform = glGetUniformLocation(shaderProgramID, "u_MVP");
     unsigned int viewMatrixUniform = glGetUniformLocation(shaderProgramID, "u_V");
@@ -89,7 +148,8 @@ int main() {
         glUniformMatrix4fv(modelMatrixUniform, 1, GL_FALSE, &ModelMatrix[0][0]);
         glUniformMatrix4fv(viewMatrixUniform, 1, GL_FALSE, &ViewMatrix[0][0]);
         glUniform3f(lightPositionUniform, lightPos.x, lightPos.y, lightPos.z);
-        glUniform1f(transparencyUniform, 0.5);
+
+        glUniform1f(transparencyUniform, 1);
         glUniform3f(lightColorUniform, 1, 0, 0);
 
         glEnableVertexAttribArray(0);
@@ -98,7 +158,19 @@ int main() {
         glEnableVertexAttribArray(1);
         glBindBuffer(GL_ARRAY_BUFFER, normalBufferID);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+        glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
 
+        glUniform1f(transparencyUniform, 0.5);
+        glUniform3f(lightColorUniform, 1, 1, 1);
+
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, boxVertexBufferID);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, boxNormalBufferID);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
         glDrawArrays(GL_TRIANGLES, 0, vertices.size());
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
@@ -110,6 +182,8 @@ int main() {
 
     glDeleteBuffers(1, &vertexBufferID);
     glDeleteBuffers(1, &normalBufferID);
+    glDeleteBuffers(1, &boxVertexBufferID);
+    glDeleteBuffers(1, &boxNormalBufferID);
     glDeleteProgram(shaderProgramID);
     glDeleteVertexArrays(1, &vertexArrayID);
 
