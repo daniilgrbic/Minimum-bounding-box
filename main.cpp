@@ -30,7 +30,7 @@ void calculateNormals(std::vector<glm::vec3>&vertices, std::vector<glm::vec3>&no
     }
 }
 
-int main() {
+int main(int argc, char ** argv) {
     if(not glfwInit()) {
         return std::cout << "Failed to initialize GLFW" << std::endl, -1;
     }
@@ -62,7 +62,7 @@ int main() {
     std::vector<glm::vec3> normals;
     std::vector<glm::vec3> tempPoints;
 
-    if(not loadObj("tetrahedron.obj", vertices, normals, tempPoints)) {
+    if(not loadObj(argc > 1 ? argv[1] : "teapot.obj", vertices, normals, tempPoints)) {
         return glfwTerminate(), -1;
     }
 
