@@ -52,13 +52,29 @@ bool loadObj(
             }
             else if(line.substr(0,2) == "f ") {
                 line.erase(0,2);
-                if(bHasNormals and !bHasTexture) {
-                    //std::cout << line << " : " << std::endl;
+                if(bHasNormals and bHasTexture) {
+                    vertexIndices.push_back(std::stoul(line.substr(0, line.find('/'))));
+                    line.erase(0, line.find('/') + 1);
+                    line.erase(0, line.find('/') + 1);
+                    normalIndices.push_back(std::stoul(line.substr(0, line.find(' '))));
+                    line.erase(0, line.find(' ') + 1);
+
+                    vertexIndices.push_back(std::stoul(line.substr(0, line.find('/'))));
+                    line.erase(0, line.find('/') + 1);
+                    line.erase(0, line.find('/') + 1);
+                    normalIndices.push_back(std::stoul(line.substr(0, line.find(' '))));
+                    line.erase(0, line.find(' ') + 1);
+
+                    vertexIndices.push_back(std::stoul(line.substr(0, line.find('/'))));
+                    line.erase(0, line.find('/') + 1);
+                    line.erase(0, line.find('/') + 1);
+                    normalIndices.push_back(std::stoul(line));
+                }
+                else if(bHasNormals) {
                     vertexIndices.push_back(std::stoul(line.substr(0, line.find('/'))));
                     line.erase(0, line.find('/') + 2);
                     normalIndices.push_back(std::stoul(line.substr(0, line.find(' '))));
                     line.erase(0, line.find(' ') + 1);
-                    //std::cout << "(" << vertexIndices[vertexIndices.size()-1] << "," << normalIndices[normalIndices.size()-1] << ")" << std::endl;
 
                     vertexIndices.push_back(std::stoul(line.substr(0, line.find('/'))));
                     line.erase(0, line.find('/') + 2);
@@ -69,26 +85,41 @@ bool loadObj(
                     line.erase(0, line.find('/') + 2);
                     normalIndices.push_back(std::stoul(line));
                 }
+                else if(bHasTexture) {
+                    vertexIndices.push_back(std::stoul(line.substr(0, line.find('/'))));
+                    line.erase(0, line.find(' ') + 1);
+
+                    vertexIndices.push_back(std::stoul(line.substr(0, line.find('/'))));
+                    line.erase(0, line.find(' ') + 1);
+
+                    vertexIndices.push_back(std::stoul(line));
+                }
                 else {
-                    std::cerr << "This file is not supported" << std::endl;
-                    return false;
+                    vertexIndices.push_back(std::stoul(line.substr(0, line.find(' '))));
+                    line.erase(0, line.find(' ') + 1);
+
+                    vertexIndices.push_back(std::stoul(line.substr(0, line.find(' '))));
+                    line.erase(0, line.find(' ') + 1);
+
+                    vertexIndices.push_back(std::stoul(line));
                 }
             }
         }
     }
     catch (...) {
-        std::cerr << "An error occured while parsing " << path << std::endl;
+        std::cerr << "An error occurred while parsing " << path << std::endl;
         return false;
     }
 
     for(unsigned int i = 0; i < vertexIndices.size(); i++) {
         unsigned int vertexIndex = vertexIndices[i];
-        unsigned int normalIndex = normalIndices[i];
-
         glm::vec3 vertex = uniqueVertices[vertexIndex-1];
-        glm::vec3 normal = tempNormals[normalIndex-1];
-
         vertices.push_back(vertex);
+    }
+
+    for(unsigned int i = 0; i < normalIndices.size(); i++) {
+        unsigned int normalIndex = normalIndices[i];
+        glm::vec3 normal = tempNormals[normalIndex-1];
         normals.push_back(normal);
     }
 

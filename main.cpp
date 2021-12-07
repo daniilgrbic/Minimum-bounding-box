@@ -19,6 +19,17 @@ glm::vec3 ptToVec3(struct pt3 point) {
     return result;
 }
 
+void calculateNormals(std::vector<glm::vec3>&vertices, std::vector<glm::vec3>&normals) {
+    normals.clear();
+    for(int i = 0; i < vertices.size(); i+= 3) {
+        glm::vec3 BMinusA = vertices[i+1] - vertices[i+0];
+        glm::vec3 CMinusA = vertices[i+2] - vertices[i+0];
+        glm::vec3 dir = glm::cross(BMinusA, CMinusA);
+        glm::vec3 normal = glm::normalize(dir);
+        normals.push_back(normal); normals.push_back(normal); normals.push_back(normal);
+    }
+}
+
 int main() {
     if(not glfwInit()) {
         return std::cout << "Failed to initialize GLFW" << std::endl, -1;
@@ -53,6 +64,10 @@ int main() {
 
     if(not loadObj("teapot_normals.obj", vertices, normals, tempPoints)) {
         return glfwTerminate(), -1;
+    }
+
+    if(normals.empty()) {
+        calculateNormals(vertices, normals);
     }
 
     std::vector<pt3> points;
@@ -90,13 +105,7 @@ int main() {
     boxVertices.push_back(ptToVec3(lower[2])); boxVertices.push_back(ptToVec3(upper[2])); boxVertices.push_back(ptToVec3(lower[3]));
     boxVertices.push_back(ptToVec3(lower[3])); boxVertices.push_back(ptToVec3(upper[2])); boxVertices.push_back(ptToVec3(upper[3]));
 
-    for(int i = 0; i < boxVertices.size(); i+= 3) {
-        glm::vec3 BMinusA = boxVertices[i+1] - boxVertices[i+0];
-        glm::vec3 CMinusA = boxVertices[i+2] - boxVertices[i+0];
-        glm::vec3 dir = glm::cross(BMinusA, CMinusA);
-        glm::vec3 normal = glm::normalize(dir);
-        boxNormals.push_back(normal); boxNormals.push_back(normal); boxNormals.push_back(normal);
-    }
+    calculateNormals(boxVertices, boxNormals);
 
     unsigned int shaderProgramID = loadShaders("shaders/Vertex.shader", "shaders/Fragment.shader");
 
