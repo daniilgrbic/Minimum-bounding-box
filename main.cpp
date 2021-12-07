@@ -62,7 +62,7 @@ int main() {
     std::vector<glm::vec3> normals;
     std::vector<glm::vec3> tempPoints;
 
-    if(not loadObj("teapot_normals.obj", vertices, normals, tempPoints)) {
+    if(not loadObj("tetrahedron.obj", vertices, normals, tempPoints)) {
         return glfwTerminate(), -1;
     }
 
@@ -180,7 +180,7 @@ int main() {
         glEnableVertexAttribArray(1);
         glBindBuffer(GL_ARRAY_BUFFER, boxNormalBufferID);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
-        glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+        glDrawArrays(GL_TRIANGLES, 0, boxVertices.size());
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
 
