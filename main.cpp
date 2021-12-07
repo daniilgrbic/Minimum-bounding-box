@@ -75,35 +75,56 @@ int main() {
         pt3 P(v.x, v.y, v.z);
         points.push_back(P);
     }
-    std::vector<pt3> lower(4), upper(4);
-    MBBapproximation(points, lower, upper);
 
-    std::cout << "Lower base:" << std::endl;
-    for(auto it: lower) {
-        std::cout << " " << it.x << " " << it.y << " " << it.z << std::endl;
-    }
-    std::cout << "Upper base:" << std::endl;
-    for(auto it: upper) {
-        std::cout << " " << it.x << " " << it.y << " " << it.z << std::endl;
+    std::vector<glm::vec3> lower, upper;
+
+    {
+        std::vector<pt3> _lower(4), _upper(4);
+        MBBapproximation(points, _lower, _upper);
+        glm::vec3 boxCenter = glm::vec3(0, 0, 0);
+
+        std::cout << "Lower base:" << std::endl;
+        for(auto point : _lower) {
+            point.show();
+            boxCenter += ptToVec3(point);
+            lower.push_back(ptToVec3(point));
+        }
+        std::cout << "Upper base:" << std::endl;
+        for(auto point : _upper) {
+            point.show();
+            boxCenter += ptToVec3(point);
+            upper.push_back(ptToVec3(point));
+        }
+
+        boxCenter /= 8;
+        for(int i = 0; i < 4; i++) {
+            glm::vec3 centerToPoint;
+            centerToPoint = glm::normalize(lower[i] - boxCenter);
+            centerToPoint /= 1000;
+            lower[i] += centerToPoint;
+            centerToPoint = glm::normalize(upper[i] - boxCenter);
+            centerToPoint /= 1000;
+            upper[i] += centerToPoint;
+        }
     }
 
     std::vector<glm::vec3> boxVertices;
     std::vector<glm::vec3> boxNormals;
 
-    boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(lower[1])); boxVertices.push_back(ptToVec3(lower[2]));
-    boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(lower[2])); boxVertices.push_back(ptToVec3(lower[3]));
-    boxVertices.push_back(ptToVec3(upper[0])); boxVertices.push_back(ptToVec3(upper[2])); boxVertices.push_back(ptToVec3(upper[1]));
-    boxVertices.push_back(ptToVec3(upper[0])); boxVertices.push_back(ptToVec3(upper[3])); boxVertices.push_back(ptToVec3(upper[2]));
+    boxVertices.push_back(lower[0]); boxVertices.push_back(lower[1]); boxVertices.push_back(lower[2]);
+    boxVertices.push_back(lower[0]); boxVertices.push_back(lower[2]); boxVertices.push_back(lower[3]);
+    boxVertices.push_back(upper[0]); boxVertices.push_back(upper[2]); boxVertices.push_back(upper[1]);
+    boxVertices.push_back(upper[0]); boxVertices.push_back(upper[3]); boxVertices.push_back(upper[2]);
 
-    boxVertices.push_back(ptToVec3(lower[2])); boxVertices.push_back(ptToVec3(lower[1])); boxVertices.push_back(ptToVec3(upper[2]));
-    boxVertices.push_back(ptToVec3(lower[1])); boxVertices.push_back(ptToVec3(upper[1])); boxVertices.push_back(ptToVec3(upper[2]));
-    boxVertices.push_back(ptToVec3(lower[3])); boxVertices.push_back(ptToVec3(upper[3])); boxVertices.push_back(ptToVec3(lower[0]));
-    boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(upper[3])); boxVertices.push_back(ptToVec3(upper[0]));
+    boxVertices.push_back(lower[2]); boxVertices.push_back(lower[1]); boxVertices.push_back(upper[2]);
+    boxVertices.push_back(lower[1]); boxVertices.push_back(upper[1]); boxVertices.push_back(upper[2]);
+    boxVertices.push_back(lower[3]); boxVertices.push_back(upper[3]); boxVertices.push_back(lower[0]);
+    boxVertices.push_back(lower[0]); boxVertices.push_back(upper[3]); boxVertices.push_back(upper[0]);
 
-    boxVertices.push_back(ptToVec3(lower[1])); boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(upper[1]));
-    boxVertices.push_back(ptToVec3(lower[0])); boxVertices.push_back(ptToVec3(upper[0])); boxVertices.push_back(ptToVec3(upper[1]));
-    boxVertices.push_back(ptToVec3(lower[2])); boxVertices.push_back(ptToVec3(upper[2])); boxVertices.push_back(ptToVec3(lower[3]));
-    boxVertices.push_back(ptToVec3(lower[3])); boxVertices.push_back(ptToVec3(upper[2])); boxVertices.push_back(ptToVec3(upper[3]));
+    boxVertices.push_back(lower[1]); boxVertices.push_back(lower[0]); boxVertices.push_back(upper[1]);
+    boxVertices.push_back(lower[0]); boxVertices.push_back(upper[0]); boxVertices.push_back(upper[1]);
+    boxVertices.push_back(lower[2]); boxVertices.push_back(upper[2]); boxVertices.push_back(lower[3]);
+    boxVertices.push_back(lower[3]); boxVertices.push_back(upper[2]); boxVertices.push_back(upper[3]);
 
     calculateNormals(boxVertices, boxNormals);
 
