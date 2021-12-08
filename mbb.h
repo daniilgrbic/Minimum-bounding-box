@@ -11,15 +11,15 @@ struct pt3 {
     ftype dot(const pt3 &o) const;
     void show();
     ftype dist(const pt3 &o) const;
-    ftype dist3d(const pt3 &o) const;
+    ftype dist3D(const pt3 &o) const;
     ftype angle(const pt3 &o) const;
     pt3 rotate(ftype angle) const;
 };
 
-void MBBapproximation(
+void mbbApproximation(
         std::vector<pt3> &points,
-        std::vector<pt3> &lowerbase,
-        std::vector<pt3> &upperbase
+        std::vector<pt3> &lowerBase,
+        std::vector<pt3> &upperBase
 );
 
 #endif //MINIMUM_BOUNDING_BOX_MBB_H

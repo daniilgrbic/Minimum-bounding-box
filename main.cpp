@@ -90,7 +90,7 @@ int main(int argc, char ** argv) {
 
     {
         std::vector<pt3> _lower(4), _upper(4);
-        MBBapproximation(points, _lower, _upper);
+        mbbApproximation(points, _lower, _upper);
         glm::vec3 boxCenter = glm::vec3(0, 0, 0);
 
         std::cout << "Lower base:" << std::endl;

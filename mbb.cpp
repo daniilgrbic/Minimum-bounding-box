@@ -4,8 +4,7 @@
 #include <vector>
 #include <set>
 #include <unordered_set>
-#include <map>
-#include <unordered_map>
+#include <numeric>
 
 #define CONVHULL_3D_ENABLE
 #include "convhull_3d.h"
@@ -17,53 +16,37 @@ using namespace std;
 typedef long double ftype;
 const ftype EPS = 1e-9;
 
-ftype difference_of_products(ftype a, ftype b, ftype c, ftype d) {
+ftype differenceOfProducts(ftype a, ftype b, ftype c, ftype d) {
     ftype cd = c * d;
     ftype err = std::fma(-c, d, cd);
     ftype dop = std::fma(a, b, -cd);
     return dop + err;
 }
 
-vector<vector<ftype>> matrix3x3mul(vector<vector<ftype>> &matrix1, vector<vector<ftype>> &matrix2) {
+vector<vector<ftype>> matrix3x3Inverse(vector<vector<ftype>> &matrix) {
     vector<vector<ftype>> result {
-        {0, 0 ,0}, 
-        {0, 0, 0},
-        {0, 0, 0}
+            {0, 0 ,0},
+            {0, 0, 0},
+            {0, 0, 0}
     };
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            for (int u = 0; u < 3; u++) {
-                result[i][j] += matrix1[i][u] * matrix2[u][j];
-            }
-        }
-    }
+    ftype determinant = matrix[0][0] * differenceOfProducts(matrix[1][1], matrix[2][2], matrix[1][2], matrix[2][1])
+                        - matrix[1][0] * differenceOfProducts(matrix[0][1], matrix[2][2], matrix[0][2], matrix[2][1])
+                        + matrix[2][0] * differenceOfProducts(matrix[0][1], matrix[1][2], matrix[0][2], matrix[1][1]);
+    result[0][0] = differenceOfProducts(matrix[1][1], matrix[2][2], matrix[1][2], matrix[2][1]) / determinant;
+    result[1][0] = differenceOfProducts(matrix[1][2], matrix[2][0], matrix[1][0], matrix[2][2]) / determinant;
+    result[2][0] = differenceOfProducts(matrix[1][0], matrix[2][1], matrix[1][1], matrix[2][0]) / determinant;
+
+    result[0][1] = differenceOfProducts(matrix[0][2], matrix[2][1], matrix[0][1], matrix[2][2]) / determinant;
+    result[1][1] = differenceOfProducts(matrix[0][0], matrix[2][2], matrix[0][2], matrix[2][0]) / determinant;
+    result[2][1] = differenceOfProducts(matrix[0][1], matrix[2][0], matrix[0][0], matrix[2][1]) / determinant;
+
+    result[0][2] = differenceOfProducts(matrix[0][1], matrix[1][2], matrix[0][2], matrix[1][1]) / determinant;
+    result[1][2] = differenceOfProducts(matrix[0][2], matrix[1][0], matrix[0][0], matrix[1][2]) / determinant;
+    result[2][2] = differenceOfProducts(matrix[0][0], matrix[1][1], matrix[0][1], matrix[1][0]) / determinant;
     return result;
-} 
+}
 
-vector<vector<ftype>> matrix3x3inverse(vector<vector<ftype>> &matrix) {
-    vector<vector<ftype>> result {
-        {0, 0 ,0}, 
-        {0, 0, 0},
-        {0, 0, 0}
-    };
-    ftype determinant = matrix[0][0] * difference_of_products(matrix[1][1], matrix[2][2], matrix[1][2], matrix[2][1])
-                        - matrix[1][0] * difference_of_products(matrix[0][1], matrix[2][2], matrix[0][2], matrix[2][1])
-                        + matrix[2][0] * difference_of_products(matrix[0][1], matrix[1][2], matrix[0][2], matrix[1][1]);
-    result[0][0] = difference_of_products(matrix[1][1], matrix[2][2], matrix[1][2], matrix[2][1]) / determinant;
-    result[1][0] = difference_of_products(matrix[1][2], matrix[2][0], matrix[1][0], matrix[2][2]) / determinant;
-    result[2][0] = difference_of_products(matrix[1][0], matrix[2][1], matrix[1][1], matrix[2][0]) / determinant;
-
-    result[0][1] = difference_of_products(matrix[0][2], matrix[2][1], matrix[0][1], matrix[2][2]) / determinant;
-    result[1][1] = difference_of_products(matrix[0][0], matrix[2][2], matrix[0][2], matrix[2][0]) / determinant;
-    result[2][1] = difference_of_products(matrix[0][1], matrix[2][0], matrix[0][0], matrix[2][1]) / determinant;
-
-    result[0][2] = difference_of_products(matrix[0][1], matrix[1][2], matrix[0][2], matrix[1][1]) / determinant;
-    result[1][2] = difference_of_products(matrix[0][2], matrix[1][0], matrix[0][0], matrix[1][2]) / determinant;
-    result[2][2] = difference_of_products(matrix[0][0], matrix[1][1], matrix[0][1], matrix[1][0]) / determinant;
-    return result;
-} 
-
-vector<ftype> matrix3x3mulvector(vector<vector<ftype>> &matrix, vector<ftype> &v) {
+vector<ftype> matrix3x3MulVector(vector<vector<ftype>> &matrix, vector<ftype> &v) {
     vector<ftype> result {0, 0, 0};
     for(int i = 0; i < 3; i++) {
         for(int j = 0; j < 3; j++) {
@@ -77,7 +60,7 @@ pt3 pt3::operator-(const pt3 &o) const {
     return pt3(x - o.x, y - o.y, z - o.z);
 }
 pt3 pt3::cross(const pt3 &o) const {
-    return pt3(difference_of_products(y, o.z , z, o.y), difference_of_products(z, o.x, x, o.z), difference_of_products(x, o.y, y, o.x));
+    return pt3(differenceOfProducts(y, o.z , z, o.y), differenceOfProducts(z, o.x, x, o.z), differenceOfProducts(x, o.y, y, o.x));
 }
 ftype pt3::dot(const pt3 &o) const {
     return x * o.x + y * o.y + z * o.z;
@@ -88,7 +71,7 @@ void pt3::show() {
 ftype pt3::dist(const pt3 &o) const {
     return sqrt((x - o.x) * (x - o.x) + (y - o.y) * (y - o.y));
 }
-ftype pt3::dist3d(const pt3 &o) const {
+ftype pt3::dist3D(const pt3 &o) const {
     return sqrt((x - o.x) * (x - o.x) + (y - o.y) * (y - o.y) + (z - o.z) * (z - o.z));
 }
 ftype pt3::angle(const pt3 &o) const {
@@ -102,16 +85,25 @@ ftype pt3::angle(const pt3 &o) const {
 }
 pt3 pt3::rotate(ftype angle) const {
     ftype coss = cos(angle), sinn = sin(angle);
-    return pt3(difference_of_products(coss, x, sinn, y), sinn * x + coss * y, 0);
+    return pt3(differenceOfProducts(coss, x, sinn, y), sinn * x + coss * y, 0);
 }
 
 
 void normalize(pt3 &point) {
-    ftype np = sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
-    if(np > EPS) {
-        point.x /= np;
-        point.y /= np;
-        point.z /= np;
+    ftype norm = sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+    if(norm > EPS) {
+        point.x /= norm;
+        point.y /= norm;
+        point.z /= norm;
+    }
+    if(point.x == -0) {
+        point.x = 0;
+    }
+    if(point.y == -0) {
+        point.y = 0;
+    }
+    if(point.z == -0) {
+        point.z = 0;
     }
 }
 
@@ -119,225 +111,217 @@ ftype ftype_abs(ftype x) {
     return (x >= 0) ? x : -x;
 }
 
-bool cmp(const pt3 &point1, const pt3 &point2) { 
-    return (point1.x < point2.x) || (ftype_abs(point1.x - point2.x) < EPS && point1.y < point2.y); 
+bool cmp(const pt3 &point1, const pt3 &point2) {
+    return (point1.x < point2.x) || (ftype_abs(point1.x - point2.x) < EPS && point1.y < point2.y);
 }
 
 bool right_turn(const pt3 &point1, const pt3 &point2, const pt3 &point3) {
-    return difference_of_products((point3.x - point1.x), (point2.y - point1.y), (point3.y - point1.y), (point2.x - point1.x)) > 0;
+    return differenceOfProducts((point3.x - point1.x), (point2.y - point1.y), (point3.y - point1.y), (point2.x - point1.x)) > 0;
 }
 
-pt3 line_inter2d(pt3 A, pt3 B, pt3 C, pt3 D)
-{
-    // Line AB represented as a1x + b1y = c1
+pt3 lineInter2D(pt3 A, pt3 B, pt3 C, pt3 D) {
+// Line AB represented as a1x + b1y = c1
     ftype a1 = B.y - A.y;
     ftype b1 = A.x - B.x;
     ftype c1 = a1 * A.x + b1 * A.y;
-  
-    // Line CD represented as a2x + b2y = c2
+
+// Line CD represented as a2x + b2y = c2
     ftype a2 = D.y - C.y;
     ftype b2 = C.x - D.x;
     ftype c2 = a2 * C.x+ b2 * C.y;
-  
-    ftype determinant = difference_of_products(a1, b2, a2, b1);
-  
-    pt3 intersection(difference_of_products(b2, c1, b1, c2) / determinant, difference_of_products(a1, c2, a2, c1) / determinant, 0);
+
+    ftype determinant = differenceOfProducts(a1, b2, a2, b1);
+
+    pt3 intersection(differenceOfProducts(b2, c1, b1, c2) / determinant, differenceOfProducts(a1, c2, a2, c1) / determinant, 0);
     if(intersection.x == -0) {
         intersection.x = 0;
     }
     if(intersection.y == -0) {
         intersection.y = 0;
     }
-
-    return intersection;    
+    return intersection;
 }
 
-void OBB(vector<pt3> &points, pt3 v, ftype &volume, vector<pt3> &lowerbase, vector<pt3> &upperbase) {
-    bool indx = ftype_abs(v.x) < EPS, indy = ftype_abs(v.y) < EPS, indz = ftype_abs(v.z) < EPS;
-    if(indx && indy && indz) {
+void orientedBoundingBox(vector<pt3> points, pt3 orientation, ftype &volume, vector<pt3> &lowerBase, vector<pt3> &upperBase) {
+    bool indX = ftype_abs(orientation.x) < EPS, indY = ftype_abs(orientation.y) < EPS, indZ = ftype_abs(orientation.z) < EPS;
+    if(indX && indY && indZ) {
         return ;
     }
 
-    vector<pt3> tmp;
-    for(auto u : points) {
-        tmp.push_back(u);
-    }
-
 // Make base transformation matrix
-    vector<vector<ftype>> trmatrix {
-        {1, 0 ,0}, 
-        {0, 1, 0},
-        {0, 0, 1}
+    vector<vector<ftype>> trMatrix {
+            {1, 0 ,0},
+            {0, 1, 0},
+            {0, 0, 1}
     };
-    vector<vector<ftype>> trmatrixinverse (trmatrix.begin(), trmatrix.end());
-    if(indx && indy) {
+    vector<vector<ftype>> trMatrixInverse (trMatrix.begin(), trMatrix.end());
+    if(indX && indY) {
     }
     else {
-        pt3 tz = v;
-        pt3 tx, ty;
-        pt3 xx(1, 0, 0), yy(0, 1, 0);
-        if(!(indy && indz)) {
-            tx = v.cross(xx);
-            normalize(tx);
-            ty = tz.cross(tx);
-            normalize(ty);
+        pt3 baseZ = orientation;
+        pt3 baseX, baseY;
+        pt3 tempX(1, 0, 0), tempY(0, 1, 0);
+        if(!(indY && indZ)) {
+            baseX = orientation.cross(tempX);
+            normalize(baseX);
+            baseY = baseZ.cross(baseX);
+            normalize(baseY);
         }
         else {
-            tx = v.cross(yy);
-            normalize(tx);
-            ty = tz.cross(tx);
-            normalize(ty);
+            baseX = orientation.cross(tempY);
+            normalize(baseX);
+            baseY = baseZ.cross(baseX);
+            normalize(baseY);
         }
 
         vector<vector<ftype>> C {
-            {tx.x, ty.x, tz.x},
-            {tx.y, ty.y, tz.y},
-            {tx.z, ty.z, tz.z}
+                {baseX.x, baseY.x, baseZ.x},
+                {baseX.y, baseY.y, baseZ.y},
+                {baseX.z, baseY.z, baseZ.z}
         };
-        trmatrixinverse = C;
-        trmatrix = matrix3x3inverse(C);
+        trMatrixInverse = C;
+        trMatrix = matrix3x3Inverse(C);
     }
 
 // Transform point coordinates
-    int n = tmp.size();
-    for(int i = 0; i < n; i++) {
-        vector <ftype> tt {tmp[i].x, tmp[i].y, tmp[i].z}; 
-        tt = matrix3x3mulvector(trmatrix, tt); 
-        tmp[i].x = tt[0]; tmp[i].y = tt[1]; tmp[i].z = tt[2]; 
+    int nPoints = points.size();
+    for(int i = 0; i < nPoints; i++) {
+        vector <ftype> tempVector {points[i].x, points[i].y, points[i].z};
+        tempVector = matrix3x3MulVector(trMatrix, tempVector);
+        points[i].x = tempVector[0]; points[i].y = tempVector[1]; points[i].z = tempVector[2];
     }
-    sort(tmp.begin(), tmp.end(), cmp);
+    sort(points.begin(), points.end(), cmp);
 
 // Find 2D convex hull
-    vector<pt3> ch2d, ch2dupper, ch2dlower;
-    ch2dupper.push_back(tmp[0]);
-    ch2dupper.push_back(tmp[1]);
-    ch2dlower.push_back(tmp[n - 1]);
-    ch2dlower.push_back(tmp[n - 2]);
-    for(int i = 2; i < n; i++) {
-        while(ch2dupper.size() > 1 && (!right_turn(ch2dupper[ch2dupper.size() - 2], ch2dupper[ch2dupper.size() - 1], tmp[i]))) {
-            ch2dupper.pop_back();
+    vector<pt3> CH2D, upperCH2D, lowerCH2D;
+    upperCH2D.push_back(points[0]);
+    upperCH2D.push_back(points[1]);
+    lowerCH2D.push_back(points[nPoints - 1]);
+    lowerCH2D.push_back(points[nPoints - 2]);
+    for(int i = 2; i < nPoints; i++) {
+        while(upperCH2D.size() > 1 && (!right_turn(upperCH2D[upperCH2D.size() - 2], upperCH2D[upperCH2D.size() - 1], points[i]))) {
+            upperCH2D.pop_back();
         }
-        ch2dupper.push_back(tmp[i]);
+        upperCH2D.push_back(points[i]);
     }
-    for(int i=2; i< n; i++) {
-        while(ch2dlower.size() > 1 && (!right_turn(ch2dlower[ch2dlower.size() - 2], ch2dlower[ch2dlower.size()-1], tmp[n - i - 1]))) {
-            ch2dlower.pop_back();
+    for(int i = 2; i < nPoints; i++) {
+        while(lowerCH2D.size() > 1 && (!right_turn(lowerCH2D[lowerCH2D.size() - 2], lowerCH2D[lowerCH2D.size() - 1], points[nPoints - i - 1]))) {
+            lowerCH2D.pop_back();
         }
-        ch2dlower.push_back(tmp[n - i - 1]);
+        lowerCH2D.push_back(points[nPoints - i - 1]);
     }
-    for(int i = 0; i < ch2dupper.size(); i++) {
-        ch2d.push_back(ch2dupper[i]);
+    for(int i = 0; i < upperCH2D.size(); i++) {
+        CH2D.push_back(upperCH2D[i]);
     }
-    for(int i = 1; i < ch2dlower.size() - 1; i++) {
-        ch2d.push_back(ch2dlower[i]);
+    for(int i = 1; i < lowerCH2D.size() - 1; i++) {
+        CH2D.push_back(lowerCH2D[i]);
     }
 
-    ftype zmin = tmp[0].z, zmax =  tmp[0].z;
-    for(auto u : tmp) {
-        if(zmin > u.z) {
-            zmin = u.z;
+    ftype zMin = points[0].z, zMax =  points[0].z;
+    for(auto u : points) {
+        if(zMin > u.z) {
+            zMin = u.z;
         }
-        if(zmax < u.z) {
-            zmax = u.z;
+        if(zMax < u.z) {
+            zMax = u.z;
         }
     }
 
-// Set calipers to initial positions 
+// Set calipers to initial positions
     pt3 caliper[4] = {pt3(1, 0, 0), pt3(0, -1, 0), pt3(-1, 0, 0), pt3(0, 1, 0)};
-    int index[4];
-    ftype xmin = 1000000, xmax = -1000000, ymin = 1000000, ymax = -1000000;
+    int caliperIndex[4] = {0, 0, 0, 0};
+    ftype xMin = points[0].x, xMax = points[0].x, yMin = points[0].y, yMax = points[0].y;
 
-    for(int i = 0; i < ch2d.size(); i++) {
-        if(ch2d[i].x < xmin) {
-            xmin = ch2d[i].x;
-            index[3] = i;
+    for(int i = 0; i < CH2D.size(); i++) {
+        if(CH2D[i].x < xMin) {
+            xMin = CH2D[i].x;
+            caliperIndex[3] = i;
         }
-        if(ch2d[i].x > xmax) {
-            xmax = ch2d[i].x;
-            index[1] = i;
+        if(CH2D[i].x > xMax) {
+            xMax = CH2D[i].x;
+            caliperIndex[1] = i;
         }
-        if(ch2d[i].y > ymax) {
-            ymax = ch2d[i].y;
-            index[0] = i;
+        if(CH2D[i].y > yMax) {
+            yMax = CH2D[i].y;
+            caliperIndex[0] = i;
         }
-        if(ch2d[i].y < ymin) {
-            ymin = ch2d[i].y;
-            index[2] = i;
+        if(CH2D[i].y < yMin) {
+            yMin = CH2D[i].y;
+            caliperIndex[2] = i;
         }
     }
 
 // Calculate initial caliper intersections and area
-    pt3 pt[4];
+    pt3 rectanglePoints[4];
     for(int i = 0; i < 4; i++) {
-        pt3 t(ch2d[index[i]].x + caliper[i].x, ch2d[index[i]].y + caliper[i].y, 0);
+        pt3 tempPoint1(CH2D[caliperIndex[i]].x + caliper[i].x, CH2D[caliperIndex[i]].y + caliper[i].y, 0);
         int i1 = (i + 1) % 4;
-        pt3 g(ch2d[index[i1]].x + caliper[i1].x, ch2d[index[i1]].y + caliper[i1].y, 0);
-        pt[i] = line_inter2d(ch2d[index[i]], t, ch2d[index[i1]], g);
+        pt3 tempPoint2(CH2D[caliperIndex[i1]].x + caliper[i1].x, CH2D[caliperIndex[i1]].y + caliper[i1].y, 0);
+        rectanglePoints[i] = lineInter2D(CH2D[caliperIndex[i]], tempPoint1, CH2D[caliperIndex[i1]], tempPoint2);
     }
-    ftype area = pt[0].dist(pt[1]) * pt[1].dist(pt[2]);
+    ftype area = rectanglePoints[0].dist(rectanglePoints[1]) * rectanglePoints[1].dist(rectanglePoints[2]);
 
 // Rotate calipers
-    for(int q = 0; q < ch2d.size(); q++) {
-        ftype minangle = 50;
+    for(int q = 0; q < CH2D.size(); q++) {
+        ftype minAngle = 50;
         int ind;
         for(int i = 0; i < 4; i++) {
-            int k = (index[i] + 1) % ch2d.size();
-            pt3 p1(ch2d[k].x - ch2d[index[i]].x, ch2d[k].y - ch2d[index[i]].y, 0);
-            ftype tangle = p1.angle(caliper[i]);
-            if(tangle < minangle) {
-                minangle = tangle; 
+            int k = (caliperIndex[i] + 1) % CH2D.size();
+            pt3 tempPoint(CH2D[k].x - CH2D[caliperIndex[i]].x, CH2D[k].y - CH2D[caliperIndex[i]].y, 0);
+            ftype tempAngle = tempPoint.angle(caliper[i]);
+            if(tempAngle < minAngle) {
+                minAngle = tempAngle;
                 ind = i;
             }
         }
         for(int i = 0; i < 4; i++) {
-            caliper[i] = caliper[i].rotate((-1) * minangle);
+            caliper[i] = caliper[i].rotate((-1) * minAngle);
         }
-        index[ind]++;
-        index[ind] %= ch2d.size();
+        caliperIndex[ind] = (caliperIndex[ind] + 1) % CH2D.size();
 
-        pt3 ptt[4];
+        pt3 tempRectanglePoints[4];
         for(int i = 0; i < 4; i++) {
-            pt3 t(ch2d[index[i]].x + caliper[i].x, ch2d[index[i]].y + caliper[i].y, 0);
+            pt3 tempPoint1(CH2D[caliperIndex[i]].x + caliper[i].x, CH2D[caliperIndex[i]].y + caliper[i].y, 0);
             int i1 = (i + 1) % 4;
-            pt3 g(ch2d[index[i1]].x + caliper[i1].x, ch2d[index[i1]].y + caliper[i1].y, 0);
-            ptt[i] = line_inter2d(ch2d[index[i]], t, ch2d[index[i1]], g);
+            pt3 tempPoint2(CH2D[caliperIndex[i1]].x + caliper[i1].x, CH2D[caliperIndex[i1]].y + caliper[i1].y, 0);
+            tempRectanglePoints[i] = lineInter2D(CH2D[caliperIndex[i]], tempPoint1, CH2D[caliperIndex[i1]], tempPoint2);
         }
-        ftype tarea = ptt[0].dist(ptt[1]) * ptt[1].dist(ptt[2]);
-        if(tarea < area) {
-            area = tarea;
+        ftype tempArea = tempRectanglePoints[0].dist(tempRectanglePoints[1]) * tempRectanglePoints[1].dist(tempRectanglePoints[2]);
+        if(tempArea < area) {
+            area = tempArea;
             for(int i = 0; i < 4; i++) {
-                pt[i] = ptt[i];
+                rectanglePoints[i] = tempRectanglePoints[i];
             }
         }
     }
 
 // Check if OBB volume is smaller than current
-    ftype tvolume = (zmax - zmin) * area;
-    if(tvolume < volume) {
-        volume = tvolume;
-        vector<ftype> pv(3);
+    ftype tempVolume = (zMax - zMin) * area;
+    if(tempVolume < volume) {
+        volume = tempVolume;
+        vector<ftype> tempBase(3);
         for(int i = 0; i < 4; i++) {
-            pv[0] = pt[i].x;
-            pv[1] = pt[i].y;
-            pv[2] = zmin;
-            pv = matrix3x3mulvector(trmatrixinverse, pv);
-            lowerbase[i].x = pv[0];
-            lowerbase[i].y = pv[1];
-            lowerbase[i].z = pv[2];
+            tempBase[0] = rectanglePoints[i].x;
+            tempBase[1] = rectanglePoints[i].y;
+            tempBase[2] = zMin;
+            tempBase = matrix3x3MulVector(trMatrixInverse, tempBase);
+            lowerBase[i].x = tempBase[0];
+            lowerBase[i].y = tempBase[1];
+            lowerBase[i].z = tempBase[2];
         }
         for(int i = 0; i < 4; i++) {
-            pv[0] = pt[i].x;
-            pv[1] = pt[i].y;
-            pv[2] = zmax;
-            pv = matrix3x3mulvector(trmatrixinverse, pv);
-            upperbase[i].x = pv[0];
-            upperbase[i].y = pv[1];
-            upperbase[i].z = pv[2];
+            tempBase[0] = rectanglePoints[i].x;
+            tempBase[1] = rectanglePoints[i].y;
+            tempBase[2] = zMax;
+            tempBase = matrix3x3MulVector(trMatrixInverse, tempBase);
+            upperBase[i].x = tempBase[0];
+            upperBase[i].y = tempBase[1];
+            upperBase[i].z = tempBase[2];
         }
     }
 }
 
-void MBBapproximation(vector<pt3> &points, vector<pt3> &lowerbase, vector<pt3> &upperbase) {
+void mbbApproximation(vector<pt3> &points, vector<pt3> &lowerBase, vector<pt3> &upperBase) {
 // Find convexhull
     int nVertices = points.size();
     ch_vertex* vertices;
@@ -347,19 +331,17 @@ void MBBapproximation(vector<pt3> &points, vector<pt3> &lowerbase, vector<pt3> &
         vertices[i].y = points[i].y;
         vertices[i].z = points[i].z;
     }
-
-    int* faceIndices = NULL;
+    int* faceIndices = nullptr;
     int nFaces;
     convhull_3d_build(vertices, nVertices, &faceIndices, &nFaces);
-    //convhull_3d_export_obj(vertices, nVertices, faceIndices, nFaces, 1, "hull");
 
-    unordered_set<int> chindexes;
+    set<int> chIndexes;
     for(int i = 0; i < 3*nFaces; i++) {
-        chindexes.insert(faceIndices[i]);
+        chIndexes.insert(faceIndices[i]);
     }
-    vector<pt3> convexhull;
-    for(auto u : chindexes) {
-        convexhull.push_back(points[u]);
+    vector<pt3> convexHull;
+    for(auto u : chIndexes) {
+        convexHull.push_back(points[u]);
     }
 
     free(vertices);
@@ -367,55 +349,61 @@ void MBBapproximation(vector<pt3> &points, vector<pt3> &lowerbase, vector<pt3> &
 
 // Find two most distant points and initialize obb orientation
     int index1, index2;
-    ftype maxdist = 0;
-    for(int i = 0; i < convexhull.size(); i++) {
-        for(int j = i + 1; j < convexhull.size(); j++) {
-            ftype tmpdist = convexhull[i].dist3d(convexhull[j]);
-            if(tmpdist > maxdist) {
+    ftype maxDist = 0;
+    for(int i = 0; i < convexHull.size(); i++) {
+        for(int j = i + 1; j < convexHull.size(); j++) {
+            ftype tempDist = convexHull[i].dist3D(convexHull[j]);
+            if(tempDist > maxDist) {
                 index1 = i;
                 index2 = j;
-                maxdist = tmpdist;
+                maxDist = tempDist;
             }
         }
     }
 
-    pt3 vinit = convexhull[index1] - convexhull[index2];
-    //pt3 vinit(1, 5, 3.1);
-    ftype volume = 100000000;
-    normalize(vinit);
-
-    /*OBB(convexhull, vinit, volume, lowerbase, upperbase);
-    cout << "Volumen " << volume << endl;
-    return;*/
+    pt3 orientation = convexHull[index1] - convexHull[index2];
+    ftype volume = 1000000000;
+    normalize(orientation);
 
 // Iterate through selected orientations
-    int d = 10;
-    for(int i1 = 0; i1 < d; i1++) {
-        for(int i2 = 0; i2 < d; i2++) {
-            for(int i3 = 0; i3 < d; i3++) {
-                pt3 v(vinit.x * i1, vinit.y * i2, vinit.z * i3);
-                normalize(v);
-                if(v.x == -0) {
-                    v.x = 0;
+    orientedBoundingBox(convexHull, pt3(1, 0, 0), volume, lowerBase, upperBase);
+    orientedBoundingBox(convexHull, pt3(0, 1, 0), volume, lowerBase, upperBase);
+    orientedBoundingBox(convexHull, pt3(0, 0, 1), volume, lowerBase, upperBase);
+    int d = 15;
+    set<pair<int, int>> S;
+    for(int i1 = 1; i1 < d; i1++) {
+        for(int i2 = 1; i2 < d; i2++) {
+            int gcd = __gcd(i1, i2);
+            pair<int, int> temp= {i1 / gcd, i2 / gcd};
+            if(S.count(temp)) {
+                continue;
+            }
+            S.insert(temp);
+            pt3 temp1(orientation.x * i1, orientation.y * i2, 0);
+            normalize(temp1);
+            orientedBoundingBox(convexHull, temp1, volume, lowerBase, upperBase);
+            pt3 temp2(orientation.x * i1, 0, orientation.y * i2);
+            normalize(temp2);
+            orientedBoundingBox(convexHull, temp2, volume, lowerBase, upperBase);
+            pt3 temp3(0, orientation.x * i1, orientation.y * i2);
+            normalize(temp3);
+            orientedBoundingBox(convexHull, temp3, volume, lowerBase, upperBase);
+        }
+    }
+    set<tuple<int, int, int>> s;
+    for(int i1 = 1; i1 < d; i1++) {
+        for(int i2 = 1; i2 < d; i2++) {
+            for(int i3 = 1; i3 < d; i3++) {
+                int gcd = __gcd(i1, __gcd(i2, i3));
+                tuple<int, int, int> temp = make_tuple(i1 / gcd, i2 / gcd, i3 / gcd);
+                if(s.count(temp)) {
+                    continue;
                 }
-                if(v.y == -0) {
-                    v.y = 0;
-                }
-                if(v.z == -0) {
-                    v.z = 0;
-                }
-                OBB(convexhull, v, volume, lowerbase, upperbase);
+                s.insert(temp);
+                pt3 tempOrientation(orientation.x * i1, orientation.y * i2, orientation.z * i3);
+                normalize(tempOrientation);
+                orientedBoundingBox(convexHull, tempOrientation, volume, lowerBase, upperBase);
             }
         }
     }
-    cout << "Volumen " << volume << endl;
-}
-
-int test() {
-
-    vector<pt3> points;
-    vector<pt3> lowerbase(4), upperbase(4);
-    MBBapproximation(points, lowerbase, upperbase);
-
-    return 0;
 }
