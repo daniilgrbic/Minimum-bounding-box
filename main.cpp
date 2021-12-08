@@ -70,11 +70,21 @@ int main(int argc, char ** argv) {
         calculateNormals(vertices, normals);
     }
 
+    glm::vec3 lowerBoundary = tempPoints[0];
+    glm::vec3 upperBoundary = tempPoints[0];
     std::vector<pt3> points;
     for(auto v : tempPoints) {
         pt3 P(v.x, v.y, v.z);
         points.push_back(P);
+        lowerBoundary.x = std::min(lowerBoundary.x, v.x);
+        lowerBoundary.y = std::min(lowerBoundary.y, v.y);
+        lowerBoundary.z = std::min(lowerBoundary.z, v.z);
+        upperBoundary.x = std::max(upperBoundary.x, v.x);
+        upperBoundary.y = std::max(upperBoundary.y, v.y);
+        upperBoundary.z = std::max(upperBoundary.z, v.z);
     }
+    glm::vec3 modelCenter = lowerBoundary + upperBoundary;
+    modelCenter /= 2;
 
     std::vector<glm::vec3> lower, upper;
 
@@ -171,7 +181,7 @@ int main(int argc, char ** argv) {
         computeVPMatricesFromInputs();
         glm::mat4 ProjectionMatrix = getProjectionMatrix();
         glm::mat4 ViewMatrix = getViewMatrix();
-        glm::mat4 ModelMatrix = glm::translate(glm::mat4(1.0), glm::vec3(0, 0, 0));
+        glm::mat4 ModelMatrix = glm::translate(glm::mat4(1.0), -modelCenter);
         glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 
         glUniformMatrix4fv(matrixUniform, 1, GL_FALSE, &MVP[0][0]);
