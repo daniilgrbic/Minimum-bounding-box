@@ -192,31 +192,6 @@ void orientedBoundingBox(vector<pt3> points, pt3 orientation, ftype &volume, vec
     }
     sort(points.begin(), points.end(), cmp);
 
-// Find 2D convex hull
-    vector<pt3> CH2D, upperCH2D, lowerCH2D;
-    upperCH2D.push_back(points[0]);
-    upperCH2D.push_back(points[1]);
-    lowerCH2D.push_back(points[nPoints - 1]);
-    lowerCH2D.push_back(points[nPoints - 2]);
-    for(int i = 2; i < nPoints; i++) {
-        while(upperCH2D.size() > 1 && (!right_turn(upperCH2D[upperCH2D.size() - 2], upperCH2D[upperCH2D.size() - 1], points[i]))) {
-            upperCH2D.pop_back();
-        }
-        upperCH2D.push_back(points[i]);
-    }
-    for(int i = 2; i < nPoints; i++) {
-        while(lowerCH2D.size() > 1 && (!right_turn(lowerCH2D[lowerCH2D.size() - 2], lowerCH2D[lowerCH2D.size() - 1], points[nPoints - i - 1]))) {
-            lowerCH2D.pop_back();
-        }
-        lowerCH2D.push_back(points[nPoints - i - 1]);
-    }
-    for(int i = 0; i < upperCH2D.size(); i++) {
-        CH2D.push_back(upperCH2D[i]);
-    }
-    for(int i = 1; i < lowerCH2D.size() - 1; i++) {
-        CH2D.push_back(lowerCH2D[i]);
-    }
-
     ftype zMin = points[0].z, zMax =  points[0].z;
     for(auto u : points) {
         if(zMin > u.z) {
@@ -227,10 +202,45 @@ void orientedBoundingBox(vector<pt3> points, pt3 orientation, ftype &volume, vec
         }
     }
 
+    vector<pt3> tempPoints;
+    tempPoints.push_back(points[0]);
+    for(int i = 1; i < nPoints; i++) {
+        if(ftype_abs(tempPoints[tempPoints.size() - 1].x - points[i].x) < EPS && ftype_abs(tempPoints[tempPoints.size() - 1].y - points[i].y) < EPS) {
+            continue;
+        }
+        tempPoints.push_back(points[i]);
+    }
+    nPoints = tempPoints.size();
+
+// Find 2D convex hull
+    vector<pt3> CH2D, upperCH2D, lowerCH2D;
+    upperCH2D.push_back(tempPoints[0]);
+    upperCH2D.push_back(tempPoints[1]);
+    lowerCH2D.push_back(tempPoints[nPoints - 1]);
+    lowerCH2D.push_back(tempPoints[nPoints - 2]);
+    for(int i = 2; i < nPoints; i++) {
+        while(upperCH2D.size() > 1 && (!right_turn(upperCH2D[upperCH2D.size() - 2], upperCH2D[upperCH2D.size() - 1], tempPoints[i]))) {
+            upperCH2D.pop_back();
+        }
+        upperCH2D.push_back(tempPoints[i]);
+    }
+    for(int i = 2; i < nPoints; i++) {
+        while(lowerCH2D.size() > 1 && (!right_turn(lowerCH2D[lowerCH2D.size() - 2], lowerCH2D[lowerCH2D.size() - 1], tempPoints[nPoints - i - 1]))) {
+            lowerCH2D.pop_back();
+        }
+        lowerCH2D.push_back(tempPoints[nPoints - i - 1]);
+    }
+    for(int i = 0; i < upperCH2D.size(); i++) {
+        CH2D.push_back(upperCH2D[i]);
+    }
+    for(int i = 1; i < lowerCH2D.size() - 1; i++) {
+        CH2D.push_back(lowerCH2D[i]);
+    }
+
 // Set calipers to initial positions
     pt3 caliper[4] = {pt3(1, 0, 0), pt3(0, -1, 0), pt3(-1, 0, 0), pt3(0, 1, 0)};
     int caliperIndex[4] = {0, 0, 0, 0};
-    ftype xMin = points[0].x, xMax = points[0].x, yMin = points[0].y, yMax = points[0].y;
+    ftype xMin = CH2D[0].x, xMax = CH2D[0].x, yMin = CH2D[0].y, yMax = CH2D[0].y;
 
     for(int i = 0; i < CH2D.size(); i++) {
         if(CH2D[i].x < xMin) {
@@ -336,7 +346,7 @@ void mbbApproximation(vector<pt3> &points, vector<pt3> &lowerBase, vector<pt3> &
     convhull_3d_build(vertices, nVertices, &faceIndices, &nFaces);
 
     set<int> chIndexes;
-    for(int i = 0; i < 3*nFaces; i++) {
+    for(int i = 0; i < 3 * nFaces; i++) {
         chIndexes.insert(faceIndices[i]);
     }
     vector<pt3> convexHull;
@@ -382,10 +392,10 @@ void mbbApproximation(vector<pt3> &points, vector<pt3> &lowerBase, vector<pt3> &
             pt3 temp1(orientation.x * i1, orientation.y * i2, 0);
             normalize(temp1);
             orientedBoundingBox(convexHull, temp1, volume, lowerBase, upperBase);
-            pt3 temp2(orientation.x * i1, 0, orientation.y * i2);
+            pt3 temp2(orientation.x * i1, 0, orientation.z * i2);
             normalize(temp2);
             orientedBoundingBox(convexHull, temp2, volume, lowerBase, upperBase);
-            pt3 temp3(0, orientation.x * i1, orientation.y * i2);
+            pt3 temp3(0, orientation.y * i1, orientation.z * i2);
             normalize(temp3);
             orientedBoundingBox(convexHull, temp3, volume, lowerBase, upperBase);
         }
@@ -406,4 +416,5 @@ void mbbApproximation(vector<pt3> &points, vector<pt3> &lowerBase, vector<pt3> &
             }
         }
     }
+    cout << "MBB volume: " << volume << endl;
 }
