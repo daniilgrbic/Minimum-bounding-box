@@ -1,5 +1,10 @@
 # Minimum bounding box approximation
 
+<p float="left" align="middle">
+  <img src="screenshots/tetrahedron.png" width="49%" />
+  <img src="screenshots/utah_teapot.png" width="49%" />
+</p>
+
 ## Running the program on Linux
 
 ### Requirements
