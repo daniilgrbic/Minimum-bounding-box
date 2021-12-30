@@ -3,7 +3,6 @@
 #include <cmath>
 #include <vector>
 #include <set>
-#include <unordered_set>
 #include <numeric>
 
 #define CONVHULL_3D_ENABLE
@@ -15,6 +14,7 @@ using namespace std;
 
 typedef long double ftype;
 const ftype EPS = 1e-9;
+const ftype MAX = 1000000000;
 
 ftype differenceOfProducts(ftype a, ftype b, ftype c, ftype d) {
     ftype cd = c * d;
@@ -78,9 +78,7 @@ ftype pt3::angle(const pt3 &o) const {
     double dot = x * o.x + y * o.y;
     double det = x * o.y - y * o.x;
     double t = atan2(det, dot);
-    if(t == -0) {
-        t = 0;
-    }
+    
     return t;
 }
 pt3 pt3::rotate(ftype angle) const {
@@ -96,15 +94,6 @@ void normalize(pt3 &point) {
         point.y /= norm;
         point.z /= norm;
     }
-    if(point.x == -0) {
-        point.x = 0;
-    }
-    if(point.y == -0) {
-        point.y = 0;
-    }
-    if(point.z == -0) {
-        point.z = 0;
-    }
 }
 
 ftype ftype_abs(ftype x) {
@@ -115,7 +104,7 @@ bool cmp(const pt3 &point1, const pt3 &point2) {
     return (point1.x < point2.x) || (ftype_abs(point1.x - point2.x) < EPS && point1.y < point2.y);
 }
 
-bool right_turn(const pt3 &point1, const pt3 &point2, const pt3 &point3) {
+bool rightTurn(const pt3 &point1, const pt3 &point2, const pt3 &point3) {
     return differenceOfProducts((point3.x - point1.x), (point2.y - point1.y), (point3.y - point1.y), (point2.x - point1.x)) > 0;
 }
 
@@ -132,14 +121,7 @@ pt3 lineInter2D(pt3 A, pt3 B, pt3 C, pt3 D) {
 
     ftype determinant = differenceOfProducts(a1, b2, a2, b1);
 
-    pt3 intersection(differenceOfProducts(b2, c1, b1, c2) / determinant, differenceOfProducts(a1, c2, a2, c1) / determinant, 0);
-    if(intersection.x == -0) {
-        intersection.x = 0;
-    }
-    if(intersection.y == -0) {
-        intersection.y = 0;
-    }
-    return intersection;
+    return pt3(differenceOfProducts(b2, c1, b1, c2) / determinant, differenceOfProducts(a1, c2, a2, c1) / determinant, 0);
 }
 
 void orientedBoundingBox(vector<pt3> points, pt3 orientation, ftype &volume, vector<pt3> &lowerBase, vector<pt3> &upperBase) {
@@ -185,22 +167,19 @@ void orientedBoundingBox(vector<pt3> points, pt3 orientation, ftype &volume, vec
 
 // Transform point coordinates
     int nPoints = points.size();
+    ftype zMin = MAX, zMax = -MAX;
     for(int i = 0; i < nPoints; i++) {
         vector <ftype> tempVector {points[i].x, points[i].y, points[i].z};
         tempVector = matrix3x3MulVector(trMatrix, tempVector);
         points[i].x = tempVector[0]; points[i].y = tempVector[1]; points[i].z = tempVector[2];
+        if(zMin > points[i].z) {
+            zMin = points[i].z;
+        }
+        if(zMax < points[i].z) {
+            zMax = points[i].z;
+        }
     }
     sort(points.begin(), points.end(), cmp);
-
-    ftype zMin = points[0].z, zMax =  points[0].z;
-    for(auto u : points) {
-        if(zMin > u.z) {
-            zMin = u.z;
-        }
-        if(zMax < u.z) {
-            zMax = u.z;
-        }
-    }
 
     vector<pt3> tempPoints;
     tempPoints.push_back(points[0]);
@@ -212,37 +191,31 @@ void orientedBoundingBox(vector<pt3> points, pt3 orientation, ftype &volume, vec
     }
     nPoints = tempPoints.size();
 
-// Find 2D convex hull
+// Find 2D convex hull and set calipers to initial positions
     vector<pt3> CH2D, upperCH2D, lowerCH2D;
     upperCH2D.push_back(tempPoints[0]);
     upperCH2D.push_back(tempPoints[1]);
     lowerCH2D.push_back(tempPoints[nPoints - 1]);
     lowerCH2D.push_back(tempPoints[nPoints - 2]);
     for(int i = 2; i < nPoints; i++) {
-        while(upperCH2D.size() > 1 && (!right_turn(upperCH2D[upperCH2D.size() - 2], upperCH2D[upperCH2D.size() - 1], tempPoints[i]))) {
+        while(upperCH2D.size() > 1 && (!rightTurn(upperCH2D[upperCH2D.size() - 2], upperCH2D[upperCH2D.size() - 1], tempPoints[i]))) {
             upperCH2D.pop_back();
         }
         upperCH2D.push_back(tempPoints[i]);
+        
     }
     for(int i = 2; i < nPoints; i++) {
-        while(lowerCH2D.size() > 1 && (!right_turn(lowerCH2D[lowerCH2D.size() - 2], lowerCH2D[lowerCH2D.size() - 1], tempPoints[nPoints - i - 1]))) {
+        while(lowerCH2D.size() > 1 && (!rightTurn(lowerCH2D[lowerCH2D.size() - 2], lowerCH2D[lowerCH2D.size() - 1], tempPoints[nPoints - i - 1]))) {
             lowerCH2D.pop_back();
         }
         lowerCH2D.push_back(tempPoints[nPoints - i - 1]);
     }
-    for(int i = 0; i < upperCH2D.size(); i++) {
-        CH2D.push_back(upperCH2D[i]);
-    }
-    for(int i = 1; i < lowerCH2D.size() - 1; i++) {
-        CH2D.push_back(lowerCH2D[i]);
-    }
 
-// Set calipers to initial positions
     pt3 caliper[4] = {pt3(1, 0, 0), pt3(0, -1, 0), pt3(-1, 0, 0), pt3(0, 1, 0)};
     int caliperIndex[4] = {0, 0, 0, 0};
-    ftype xMin = CH2D[0].x, xMax = CH2D[0].x, yMin = CH2D[0].y, yMax = CH2D[0].y;
-
-    for(int i = 0; i < CH2D.size(); i++) {
+    ftype xMin = MAX, xMax = -MAX, yMin = MAX, yMax = -MAX;
+    for(int i = 0; i < upperCH2D.size(); i++) {
+        CH2D.push_back(upperCH2D[i]);
         if(CH2D[i].x < xMin) {
             xMin = CH2D[i].x;
             caliperIndex[3] = i;
@@ -258,6 +231,27 @@ void orientedBoundingBox(vector<pt3> points, pt3 orientation, ftype &volume, vec
         if(CH2D[i].y < yMin) {
             yMin = CH2D[i].y;
             caliperIndex[2] = i;
+        }
+    }
+    int tempInd;
+    for(int i = 1; i < lowerCH2D.size() - 1; i++) {
+        CH2D.push_back(lowerCH2D[i]);
+        tempInd = CH2D.size() - 1;
+        if(CH2D[tempInd].x < xMin) {
+            xMin = CH2D[tempInd].x;
+            caliperIndex[3] = tempInd;
+        }
+        if(CH2D[tempInd].x > xMax) {
+            xMax = CH2D[tempInd].x;
+            caliperIndex[1] = tempInd;
+        }
+        if(CH2D[tempInd].y > yMax) {
+            yMax = CH2D[tempInd].y;
+            caliperIndex[0] = tempInd;
+        }
+        if(CH2D[tempInd].y < yMin) {
+            yMin = CH2D[tempInd].y;
+            caliperIndex[2] = tempInd;
         }
     }
 
@@ -370,46 +364,45 @@ void mbbApproximation(vector<pt3> &points, vector<pt3> &lowerBase, vector<pt3> &
             }
         }
     }
-
     pt3 orientation = convexHull[index1] - convexHull[index2];
-    ftype volume = 1000000000;
+    ftype volume = MAX;
     normalize(orientation);
 
 // Iterate through selected orientations
     orientedBoundingBox(convexHull, pt3(1, 0, 0), volume, lowerBase, upperBase);
     orientedBoundingBox(convexHull, pt3(0, 1, 0), volume, lowerBase, upperBase);
     orientedBoundingBox(convexHull, pt3(0, 0, 1), volume, lowerBase, upperBase);
-    int d = 15;
-    set<pair<int, int>> S;
+    int d = 11;
+    set<pair<int, int>> set1;
     for(int i1 = 1; i1 < d; i1++) {
         for(int i2 = 1; i2 < d; i2++) {
-            int gcd = __gcd(i1, i2);
-            pair<int, int> temp= {i1 / gcd, i2 / gcd};
-            if(S.count(temp)) {
+            int gcd = std::gcd(i1, i2);
+            pair<int, int> temp = {i1 / gcd, i2 / gcd};
+            if(set1.count(temp)) {
                 continue;
             }
-            S.insert(temp);
-            pt3 temp1(orientation.x * i1, orientation.y * i2, 0);
-            normalize(temp1);
-            orientedBoundingBox(convexHull, temp1, volume, lowerBase, upperBase);
-            pt3 temp2(orientation.x * i1, 0, orientation.z * i2);
-            normalize(temp2);
-            orientedBoundingBox(convexHull, temp2, volume, lowerBase, upperBase);
-            pt3 temp3(0, orientation.y * i1, orientation.z * i2);
-            normalize(temp3);
-            orientedBoundingBox(convexHull, temp3, volume, lowerBase, upperBase);
+            set1.insert(temp);
+            pt3 tempOrientation1(orientation.x * i1, orientation.y * i2, 0);
+            normalize(tempOrientation1);
+            orientedBoundingBox(convexHull, tempOrientation1, volume, lowerBase, upperBase);
+            pt3 tempOrientation2(orientation.x * i1, 0, orientation.z * i2);
+            normalize(tempOrientation2);
+            orientedBoundingBox(convexHull, tempOrientation2, volume, lowerBase, upperBase);
+            pt3 tempOrientation3(0, orientation.y * i1, orientation.z * i2);
+            normalize(tempOrientation3);
+            orientedBoundingBox(convexHull, tempOrientation3, volume, lowerBase, upperBase);
         }
     }
-    set<tuple<int, int, int>> s;
+    set<tuple<int, int, int>> set2;
     for(int i1 = 1; i1 < d; i1++) {
         for(int i2 = 1; i2 < d; i2++) {
             for(int i3 = 1; i3 < d; i3++) {
-                int gcd = __gcd(i1, __gcd(i2, i3));
+                int gcd = std::gcd(i1, std::gcd(i2, i3));
                 tuple<int, int, int> temp = make_tuple(i1 / gcd, i2 / gcd, i3 / gcd);
-                if(s.count(temp)) {
+                if(set2.count(temp)) {
                     continue;
                 }
-                s.insert(temp);
+                set2.insert(temp);
                 pt3 tempOrientation(orientation.x * i1, orientation.y * i2, orientation.z * i3);
                 normalize(tempOrientation);
                 orientedBoundingBox(convexHull, tempOrientation, volume, lowerBase, upperBase);
