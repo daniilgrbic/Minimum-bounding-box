@@ -32,7 +32,7 @@ In addition to packages above, install `g++`, `libglfw3-dev`, and
 `libglm-dev`. 
 
 Navigate to source root folder and run
-* ` g++ *.cpp -I ./utility/ utility/*.cpp -lGLEW -lglfw -lGL`
+* ` g++ *.cpp -I ./utility/ utility/*.cpp -lGLEW -lglfw -lGL -O3`
 
 ### Using CMake
 Install the `cmake` package.
