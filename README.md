@@ -32,19 +32,18 @@ In addition to packages above, install `g++`, `libglfw3-dev`, and
 `libglm-dev`. 
 
 Navigate to source root folder and run
-* ` g++ *.cpp -I ./utility/ utility/*.cpp -lGLEW -lglfw -lGL -O3`
+* `g++ *.cpp -I ./utility/ utility/*.cpp -lGLEW -lglfw -lGL -std=c++17 -O1 -o Minimum_bounding_box`
 
 ### Using CMake
 Install the `cmake` package.
 
 Navigate to source root folder and run 
-* `cmake .` 
+* `cmake -B ./build` 
 
-This will produce errors because CMake cache doesn't exist. However,
-running the command has generated the said cache, so now we can run 
-the command again:
-* `cmake .` and then
-* `make`
+This may produce errors because CMake cache doesn't exist. If this happens, run the command again.
+
+After this, run
+* `make --directory=build`
 
 You should now see a message that the build was successful.
 

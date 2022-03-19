@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(Minimum_bounding_box)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(
@@ -16,4 +16,4 @@ add_executable(
         mbb.h
         mbb.cpp)
 
-target_link_libraries(Minimum_bounding_box -lGLEW -lglfw -lGL)
+target_link_libraries(Minimum_bounding_box -lGLEW -lglfw -lGL -O1)
