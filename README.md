@@ -32,9 +32,11 @@ In addition to packages above, install `g++`, `libglfw3-dev`, and
 `libglm-dev`. 
 
 Navigate to source root folder and run
-* `g++ *.cpp -I ./utility/ utility/*.cpp -lGLEW -lglfw -lGL -std=c++17 -O1 -o Minimum_bounding_box`
+* `g++ *.cpp -I ./utility/ utility/*.cpp -lGL -lGLEW -lglfw -std=c++17 -O1 -o Minimum_bounding_box`
 
 ### Using CMake
+##### (works on macOS, use brew to install glew and glfw)
+\
 Install the `cmake` package.
 
 Navigate to source root folder and run 
@@ -46,8 +48,3 @@ After this, run
 * `make --directory=build`
 
 You should now see a message that the build was successful.
-
-
-
-
-

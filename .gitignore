@@ -48,3 +48,4 @@ _deps
 # Environment
 .idea
 .vscode
+.DS_Store

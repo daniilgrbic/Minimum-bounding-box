@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 
+#define GLFW_INCLUDE_GLCOREARB
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -39,6 +40,9 @@ int main(int argc, char ** argv) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    #ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    #endif
 
     window = glfwCreateWindow(1024, 768, "MBB", nullptr, nullptr);
     if(window == nullptr) {

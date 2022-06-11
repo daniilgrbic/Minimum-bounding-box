@@ -86,5 +86,3 @@ unsigned int loadShaders(const std::string &vertex_file_path, const std::string 
 
     return ProgramID;
 }
-
-

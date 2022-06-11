@@ -27,4 +27,3 @@ void main(){
 
 	Normal_cameraspace = ( u_V * u_M * vec4(vertexNormal_modelspace,0)).xyz;
 }
-
